@@ -40,6 +40,7 @@ LOCALE_PATHS = [
 ]
 
 ROOT_URLCONF = 'esewa.urls'
+ALLOWED_HOSTS = ['*']
 
 SECRET_KEY = 'insecure-secret-key'
 

@@ -1,6 +1,4 @@
-"""PayTabs response processing views."""
 import logging
-
 import requests
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -23,11 +21,8 @@ logger = logging.getLogger(__name__)
 Applicator = get_class('offer.applicator', 'Applicator')
 Basket = get_model('basket', 'Basket')
 OrderNumberGenerator = get_class('order.utils', 'OrderNumberGenerator')
-OrderTotalCalculator = get_class('checkout.calculators', 'OrderTotalCalculator')
-NoShippingRequired = get_class('shipping.methods', 'NoShippingRequired')
 
 ESEWA_SUCCESS_CODES = ['100', '111']
-
 
 class EsewaResponseView(EdxOrderPlacementMixin, View):
     """
@@ -42,12 +37,12 @@ class EsewaResponseView(EdxOrderPlacementMixin, View):
     def dispatch(self, request, *args, **kwargs):
         return super(EsewaResponseView, self).dispatch(request, *args, **kwargs)
 
-    def _verify_response(self, request, payment_reference):
+    def _verify_response(self, payment_reference):
         """
         Verify the given payment_reference number to confirm that it is for a valid transaction
         and return the verification response data.
         """
-        partner_short_code = request.site.siteconfiguration.partner.short_code
+        partner_short_code = self.request.site.siteconfiguration.partner.short_code
         configuration = settings.PAYMENT_PROCESSOR_CONFIG[partner_short_code.lower()][self.payment_processor.NAME]
         api_parameters = {
             "merchant_email": configuration['merchant_email'],
@@ -61,11 +56,7 @@ class EsewaResponseView(EdxOrderPlacementMixin, View):
         """
         Return the basket for the given id or None.
         """
-        if not basket_id:
-            return None
-
         try:
-            basket_id = int(basket_id)
             basket = Basket.objects.get(id=basket_id)
             basket.strategy = strategy.Default()
             Applicator().apply(basket, basket.owner, self.request)
@@ -82,23 +73,23 @@ class EsewaResponseView(EdxOrderPlacementMixin, View):
         verification_data = {}
         try:
             payment_reference = request.POST.get('payment_reference')
-            if payment_reference is None:
+            if not payment_reference:
                 logger.error('Received an invalid Esewa merchant notification [%s]', request.POST)
                 return redirect(reverse('payment_error'))
 
-            logger.info('Received PayTabs merchant notification with payment_reference %s', payment_reference)
-            verification_data = self._verify_response(request, payment_reference)
-            if not verification_data['response_code'] in ESEWA_SUCCESS_CODES:
+            logger.info('Received Esewa merchant notification with payment_reference %s', payment_reference)
+            verification_data = self._verify_response(payment_reference)
+            if verification_data.get('response_code') not in ESEWA_SUCCESS_CODES:
                 logger.error(
-                    'Received an error (%i) from PayTabs merchant notification [%s]',
-                    verification_data['response_code'],
+                    'Received an error (%s) from Esewa merchant notification [%s]',
+                    verification_data.get('response_code'),
                     request.POST
                 )
                 return redirect(reverse('payment_error'))
-            reference_number = verification_data['reference_no']
+            reference_number = verification_data.get('reference_no')
             basket_id = OrderNumberGenerator().basket_id(reference_number)
             basket = self._get_basket(basket_id)
-            transaction_id = verification_data['transaction_id']
+            transaction_id = verification_data.get('transaction_id')
             if not basket:
                 logger.error('Received payment for non-existent basket [%s].', basket_id)
                 return redirect(reverse('payment_error'))
@@ -120,13 +111,14 @@ class EsewaResponseView(EdxOrderPlacementMixin, View):
                         payment_processor_response.id
                     )
                     raise
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:  
             logger.exception(
                 'Attempts to handle payment for basket [%d] failed due to [%s].',
                 basket.id,
                 exc.__class__.__name__
             )
             return redirect(reverse('payment_error'))
+        
         self.create_order(request, basket)
         receipt_url = get_receipt_page_url(
             order_number=basket.order_number,
