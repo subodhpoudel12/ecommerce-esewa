@@ -66,7 +66,7 @@ class EsewaResponseView(EdxOrderPlacementMixin, View):
 
     def post(self, request):
         """
-        Handle the POST request from PayTabs and redirect to the appropriate page based on the status.
+        Handle the POST request from Esewa and redirect to the appropriate page based on the status.
         """
         transaction_id = 'Unknown'
         basket = None
