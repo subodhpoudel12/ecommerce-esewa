@@ -37,7 +37,7 @@ Name= 'esewa'
 def __init__ (self, site) :
      super(esewa, self).__init__(site)
      configuration = self.configuration
-     self.merchant_phone_number = configuration['merchant_phone_number']
+     self.merchant_id = configuration['merchant_id']
      self.secret_key = configuration['secret_key']
      self.return_base_url = configuration['return_base_url']
      self.site = site
