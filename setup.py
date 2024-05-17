@@ -140,7 +140,6 @@ setup(
         include=['esewa', 'esewa.*'],
         exclude=["*tests"],
     ),
-
     include_package_data=True,
     install_requires=load_requirements('requirements/base.in'),
     python_requires=">=3.8",
@@ -157,4 +156,9 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.8',
     ],
+    entry_points={
+        "lms.djangoapp": [
+            "esewa = esewa.apps:EsewaAppConfig",
+        ],
+    }
 )

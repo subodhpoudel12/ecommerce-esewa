@@ -37,9 +37,10 @@ Name= 'esewa'
 def __init__ (self, site) :
      super(esewa, self).__init__(site)
      configuration = self.configuration
-     self.merchant_email = configuration['merchant_email']
+     self.merchant_id = configuration['merchant_id']
      self.secret_key = configuration['secret_key']
-     self.return_base_url = configuration['return_base_url']
+     self.base_url = configuration['base_url']
+
      self.site = site
 
 def _get_user_profile_data(self, user, request):
@@ -93,7 +94,6 @@ def _get_basket_data(self, basket):
                 get_cart_field(index, 'type'): self.CART_ITEM_TYPE_DIGITAL,
                 get_cart_field(index, 'sku'): line.stockrecord.partner_sku,
                 get_cart_field(index, 'price'): format_price(line.unit_price_incl_tax),
-                get_cart_field(index, 'currency'): self.currency,
                 get_cart_field(index, 'totalAmount'): format_price(line.line_price_incl_tax_incl_discounts)
             }
             basket_data.update(cart_item)
@@ -116,18 +116,18 @@ def get_transaction_parameters(self, basket, request=None, use_client_side_check
         # Adjust the parameters according to eSewa's requirements
         
         # Example eSewa API endpoint and request parameters
-        endpoint = "https://rc-epay.esewa.com.np/api/epay/main/v2/form"
+        endpoint = "https://uat.esewa.com.np"
         payload = {
-            'amount': self.merchant_id,
-            'failure_url' : self.secret_key,
-            'product_delivery_charge' : self.site_url,
-            'product_code' : self.return_url,
-            'signature' : self.phone_number,
-            'signed_field_names': str(basket.total_incl_tax),
-            'success_url': 'Your Product Name',
-            'tax_amount' : '',
-            'total_amount' : '',
-            'transaction_uuid' : '',
+            'amount': str(basket.total_incl_tax),
+            'failure_url' : self.failure_url,
+            'product_delivery_charge' : self.product_delivery_charge,
+            'product_code' : self.product_code,
+            'signature' : self.signature,
+            'signed_field_names': self.signed_field_names,
+            'success_url': self.success_url,
+            'tax_amount' : self.tax_amount,
+            'total_amount' : str(basket.total_incl_tax),
+            'transaction_uuid' : self.transaction_uuid,
             # Add other required parameters
         }
 
@@ -153,20 +153,20 @@ def handle_processor_response(self, response, basket=None):
         # Extract transaction details and handle success or failure
         
         # Example handling for successful transaction
-        transaction_id = response.get('transaction_id')
-        total = response.get('amount')
-        phone_number = response.get('phone_number')
-        currency = 'NPR'  # Assuming Nepalese Rupee
-        card_number = 'N/A'  # eSewa doesn't provide card details
-        card_type = 'N/A'
+        transaction_uuid = response.get('transaction_id')
+        total_amount = response.get('total_amount')
+        product_code = response.get('product_code')
+        status = response.get('status')
+        ref_id = response.get('ref_id')  # Assuming Nepalese Rupee
+        
         
         # Return processed response
         return HandledProcessorResponse(
-            transaction_id=transaction_id,
-            total=total,
-            currency=currency,
-            card_number=card_number,
-            card_type=card_type
+            transaction_uuid=transaction_uuid,
+            total_amount=total_amount,
+            product_code=product_code,
+            status=status,
+            ref_id=ref_id
         )
 
 def issue_credit(self, order_number, basket, reference_number, amount, currency):
