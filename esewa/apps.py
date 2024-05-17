@@ -2,7 +2,7 @@
 your_app Django application initialization.
 """
 from django.apps import AppConfig
-class EsewaConfig(AppConfig):
+class EsewaAppConfig(AppConfig):
     """
     Configuration for the your_app Django application.
     """
