@@ -39,7 +39,8 @@ def __init__ (self, site) :
      configuration = self.configuration
      self.merchant_id = configuration['merchant_id']
      self.secret_key = configuration['secret_key']
-     self.return_base_url = configuration['return_base_url']
+     self.base_url = configuration['base_url']
+
      self.site = site
 
 def _get_user_profile_data(self, user, request):
@@ -115,10 +116,10 @@ def get_transaction_parameters(self, basket, request=None, use_client_side_check
         # Adjust the parameters according to eSewa's requirements
         
         # Example eSewa API endpoint and request parameters
-        endpoint = "https://rc-epay.esewa.com.np/api/epay/main/v2/form"
+        endpoint = "https://uat.esewa.com.np"
         payload = {
             'amount': str(basket.total_incl_tax),
-            'failure_url' : self.secret_key,
+            'failure_url' : self.failure_url,
             'product_delivery_charge' : self.product_delivery_charge,
             'product_code' : self.product_code,
             'signature' : self.signature,

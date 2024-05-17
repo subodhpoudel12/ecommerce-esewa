@@ -45,9 +45,10 @@ class EsewaResponseView(EdxOrderPlacementMixin, View):
         partner_short_code = self.request.site.siteconfiguration.partner.short_code
         configuration = settings.PAYMENT_PROCESSOR_CONFIG[partner_short_code.lower()][self.payment_processor.NAME]
         api_parameters = {
-            "merchant_email": configuration['merchant_email'],
+            "merchant_id": configuration['merchant_id'],
             "secret_key": configuration['secret_key'],
-            "payment_reference": payment_reference
+            "base_url": configuration['base_url'],
+            "public_key": configuration['public_key']
         }
         response = requests.post("https://rc-epay.esewa.com.np/api/epay/main/v2/form", data=api_parameters)
         return response.json()
